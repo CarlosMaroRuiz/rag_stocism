@@ -1,0 +1,46 @@
+# ==========================================
+# FastAPI
+# ==========================================
+fastapi==0.115.5
+uvicorn[standard]==0.32.0
+python-multipart==0.0.9
+pypdf
+
+# ==========================================
+# LangChain Stack (versiones actualizadas)
+# ==========================================
+langchain>=0.3.0
+langchain-core>=1.0.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# ==========================================
+# Embeddings (Hugging Face)
+# ==========================================
+langchain-huggingface>=0.1.0
+sentence-transformers>=3.2.0
+transformers>=4.41.0,<5.0.0
+torch>=2.0.0
+
+# ==========================================
+# DeepSeek (requiere langchain-core>=1.0.0)
+# ==========================================
+langchain-deepseek>=1.0.0
+
+# ==========================================
+# Postgres + pgvector
+# ==========================================
+psycopg[binary]>=3.1.0
+langchain-postgres>=0.0.12
+pgvector>=0.2.0
+sqlalchemy>=2.0.0
+
+# ==========================================
+# MinIO (S3-compatible storage)
+# ==========================================
+minio>=7.2.0
+
+# ==========================================
+# Utilidades
+# ==========================================
+python-dotenv>=1.0.0
