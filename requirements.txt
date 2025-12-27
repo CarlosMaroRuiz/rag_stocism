@@ -44,3 +44,5 @@ minio>=7.2.0
 # Utilidades
 # ==========================================
 python-dotenv>=1.0.0
+mysql-connector-python
+requests>=2.31.0  # Para test SSE

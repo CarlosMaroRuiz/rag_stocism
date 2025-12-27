@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor Estoico Digital</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #2c3e50;
+        }
+
+        .container {
+            background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            padding: 40px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 3px solid #c9a961;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 2.5em;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .greek-text {
+            text-align: center;
+            color: #c9a961;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-style: italic;
+            font-family: 'Georgia', serif;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .stoic-quote {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: #ecf0f1;
+            padding: 20px;
+            border-left: 4px solid #c9a961;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .stoic-quote .author {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #c9a961;
+            font-weight: 600;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #c9a961;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .test-button {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            border: 2px solid #c9a961;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .test-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(201, 169, 97, 0.3);
+            background: linear-gradient(135deg, #c9a961 0%, #b8954d 100%);
+            color: #2c3e50;
+        }
+
+        .test-button.active {
+            background: linear-gradient(135deg, #c9a961 0%, #b8954d 100%);
+            color: #2c3e50;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #c9a961;
+            box-shadow: 0 0 0 3px rgba(201, 169, 97, 0.1);
+        }
+
+        .main-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #c9a961 0%, #b8954d 100%);
+            color: #2c3e50;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .main-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(201, 169, 97, 0.4);
+        }
+
+        .main-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #ecf0f1;
+            border-top-color: #c9a961;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-container {
+            margin-top: 30px;
+        }
+
+        .profile-summary {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #c9a961;
+        }
+
+        .profile-summary h3 {
+            color: #c9a961;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .recommendation-card {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-left: 5px solid #c9a961;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            border-left-color: #b8954d;
+        }
+
+        .rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .rec-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            flex: 1;
+        }
+
+        .difficulty-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .difficulty-badge.fácil {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .difficulty-badge.intermedio {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .difficulty-badge.difícil {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .rec-content {
+            color: #4a5568;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            font-size: 15px;
+            text-align: justify;
+        }
+
+        .rec-source {
+            background: #f8f9fa;
+            border-left: 3px solid #c9a961;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-style: italic;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .rec-source strong {
+            color: #c9a961;
+            font-style: normal;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .api-status {
+            text-align: center;
+            margin-top: 30px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .api-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .api-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Upload section */
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #c9a961;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .upload-section:hover {
+            background: #ecf0f1;
+            border-color: #b8954d;
+        }
+
+        .upload-section input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+            color: #c9a961;
+        }
+
+        .upload-text {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #ecf0f1;
+        }
+
+        .file-item.uploaded {
+            border-color: #c9a961;
+            background: #f8f9fa;
+        }
+
+        .file-status {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .file-item.uploaded .file-status {
+            color: #27ae60;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ MENTOR ESTOICO DIGITAL</h1>
+        <div class="greek-text">Σοφία • Ἀνδρεία • Δικαιοσύνη • Σωφροσύνη</div>
+        <p class="subtitle">Sabiduría • Coraje • Justicia • Templanza</p>
+
+        <div class="stoic-quote">
+            "No son las cosas las que nos perturban, sino los juicios que hacemos sobre ellas."
+            <div class="author">— Epicteto, Enquiridión</div>
+        </div>
+
+        <!-- Sección de Upload de PDFs Estoicos -->
+        <div class="section">
+            <div class="section-title">📚 Textos Estoicos Clásicos</div>
+            <div class="upload-section" id="uploadArea">
+                <div class="upload-icon">📖</div>
+                <div class="upload-text">
+                    Arrastra PDFs de textos estoicos aquí<br>
+                    <small>(Meditaciones, Enquiridión, Cartas a Lucilio, etc.)</small>
+                </div>
+                <input type="file" id="fileInput" multiple accept=".pdf">
+            </div>
+            <div class="file-list" id="fileList"></div>
+        </div>
+
+        <!-- Sección de Prueba Rápida -->
+        <div class="section">
+            <div class="section-title">🧪 Modo de Prueba</div>
+
+            <div class="test-buttons">
+                <button class="test-button" onclick="useTestUser('7e41ec3e-344a-42d4-8aba-f75196098e10')">
+                    Usuario Test 1<br>
+                    <small style="opacity: 0.8;">México • Ocasional</small>
+                </button>
+                <button class="test-button" onclick="useCustomUser()">
+                    Usuario Personalizado<br>
+                    <small style="opacity: 0.8;">Ingresa tu ID</small>
+                </button>
+            </div>
+
+            <div class="input-group" id="customUserInput" style="display: none;">
+                <label for="userId">ID de Usuario (de la base de datos):</label>
+                <input type="text"
+                       id="userId"
+                       placeholder="ej: 7e41ec3e-344a-42d4-8aba-f75196098e10"
+                       value="7e41ec3e-344a-42d4-8aba-f75196098e10">
+            </div>
+        </div>
+
+        <!-- Botón Principal -->
+        <div class="section">
+            <button class="main-button" onclick="generateRecommendations()" id="generateBtn">
+                ✨ Recibir Enseñanzas Estoicas
+            </button>
+
+            <div id="loadingContainer"></div>
+            <div id="resultsContainer" class="results-container"></div>
+        </div>
+
+        <!-- Status de API -->
+        <div class="api-status disconnected" id="apiStatus">
+            🔌 Verificando conexión con el servidor...
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let currentUserId = '7e41ec3e-344a-42d4-8aba-f75196098e10';
+
+        // === Test User Selection ===
+        function useTestUser(userId) {
+            currentUserId = userId;
+            document.getElementById('userId').value = userId;
+            document.getElementById('customUserInput').style.display = 'none';
+
+            // Update button states
+            document.querySelectorAll('.test-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function useCustomUser() {
+            document.getElementById('customUserInput').style.display = 'block';
+            document.querySelectorAll('.test-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            currentUserId = document.getElementById('userId').value;
+        }
+
+        // Update currentUserId when input changes
+        document.getElementById('userId')?.addEventListener('input', (e) => {
+            currentUserId = e.target.value;
+        });
+
+        // === Upload Functionality ===
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#ecf0f1';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.background = '#f8f9fa';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#f8f9fa';
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type === 'application/pdf') {
+                    uploadFile(file);
+                }
+            });
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const fileId = 'file_' + Math.random().toString(36).substr(2, 9);
+            const fileItem = createFileItem(file.name, 'Procesando...', fileId);
+
+            try {
+                const response = await fetch(`${API_URL}/upload-document/admin`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateFileItem(fileId, `✓ ${data.total_chunks} chunks procesados`, 'uploaded');
+                } else {
+                    const error = await response.json().catch(() => ({ detail: 'Error desconocido' }));
+                    updateFileItem(fileId, `✗ Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                updateFileItem(fileId, '✗ Error de conexión', 'error');
+            }
+        }
+
+        function createFileItem(name, status, id) {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.id = id;
+            item.innerHTML = `
+                <span>${name}</span>
+                <span class="file-status">${status}</span>
+            `;
+            fileList.appendChild(item);
+            return item;
+        }
+
+        function updateFileItem(id, status, className) {
+            const item = document.getElementById(id);
+            if (item) {
+                item.classList.add(className);
+                item.querySelector('.file-status').textContent = status;
+            }
+        }
+
+        // === Generate Recommendations con Server-Sent Events ===
+        let eventSource = null;
+
+        function generateRecommendations() {
+            const userId = currentUserId || document.getElementById('userId').value.trim();
+
+            if (!userId) {
+                alert('Por favor selecciona un usuario de prueba o ingresa un ID de usuario');
+                return;
+            }
+
+            // Cerrar conexión previa si existe
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Conectando con los maestros estoicos...';
+
+            const loadingContainer = document.getElementById('loadingContainer');
+            loadingContainer.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <div id="statusMessage">Iniciando conexión...</div>
+                    <small style="color: #95a5a6; margin-top: 10px;">
+                        Marco Aurelio • Epicteto • Séneca
+                    </small>
+                </div>
+            `;
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = '';
+
+            // Crear conexión SSE
+            eventSource = new EventSource(`${API_URL}/generate/recommendations/stream?user_id=${encodeURIComponent(userId)}`);
+
+            let recommendations = [];
+            let profileSummary = '';
+
+            // Eventos del servidor
+            eventSource.addEventListener('status', (event) => {
+                const data = JSON.parse(event.data);
+                document.getElementById('statusMessage').textContent = data.message;
+            });
+
+            eventSource.addEventListener('profile', (event) => {
+                const data = JSON.parse(event.data);
+                profileSummary = data.summary;
+
+                // Mostrar perfil
+                resultsContainer.innerHTML = `
+                    <div class="profile-summary">
+                        <h3>📊 Perfil del Discípulo</h3>
+                        <p>${data.summary}</p>
+                    </div>
+                    <div id="recommendationsContainer"></div>
+                `;
+            });
+
+            eventSource.addEventListener('recommendation', (event) => {
+                const rec = JSON.parse(event.data);
+                recommendations.push(rec);
+
+                // Actualizar mensaje de progreso
+                document.getElementById('statusMessage').textContent =
+                    `Recibiendo enseñanza ${rec.index} de ${rec.total}...`;
+
+                // Agregar recomendación con animación
+                const recContainer = document.getElementById('recommendationsContainer');
+                const difficultyClass = rec.difficulty?.toLowerCase() || 'intermedio';
+
+                const recCard = document.createElement('div');
+                recCard.className = 'recommendation-card';
+                recCard.style.opacity = '0';
+                recCard.style.transform = 'translateY(20px)';
+                recCard.innerHTML = `
+                    <div class="rec-header">
+                        <div class="rec-title">${rec.index}. ${rec.title}</div>
+                        <span class="difficulty-badge ${difficultyClass}">
+                            ${rec.difficulty || 'Intermedio'}
+                        </span>
+                    </div>
+                    <div class="rec-content">${rec.content}</div>
+                    ${rec.source_reference ? `
+                        <div class="rec-source">
+                            <strong>📜 Fuente:</strong> ${rec.source_reference}
+                        </div>
+                    ` : ''}
+                `;
+
+                recContainer.appendChild(recCard);
+
+                // Animar entrada
+                setTimeout(() => {
+                    recCard.style.transition = 'all 0.5s ease';
+                    recCard.style.opacity = '1';
+                    recCard.style.transform = 'translateY(0)';
+                }, 50);
+
+                // Scroll suave hacia la nueva recomendación
+                recCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+
+            eventSource.addEventListener('complete', (event) => {
+                const data = JSON.parse(event.data);
+                loadingContainer.innerHTML = `
+                    <div class="loading-container" style="color: #27ae60;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">✓</div>
+                        <div>${data.message}</div>
+                        <small style="color: #7f8c8d; margin-top: 10px;">
+                            Total: ${data.total} enseñanzas estoicas
+                        </small>
+                    </div>
+                `;
+
+                // Cerrar conexión
+                eventSource.close();
+                eventSource = null;
+
+                // Restaurar botón
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = '✨ Recibir Nuevas Enseñanzas';
+                    loadingContainer.innerHTML = '';
+                }, 3000);
+            });
+
+            eventSource.addEventListener('error', (event) => {
+                let errorMsg = 'Error de conexión con el servidor';
+
+                if (event.data) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        errorMsg = data.error || errorMsg;
+                    } catch (e) {
+                        // Error parsing, usar mensaje por defecto
+                    }
+                }
+
+                showError(errorMsg);
+
+                // Cerrar conexión
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+
+                // Restaurar botón
+                btn.disabled = false;
+                btn.textContent = '✨ Recibir Enseñanzas Estoicas';
+                loadingContainer.innerHTML = '';
+            });
+
+            // Error de conexión (no es evento del servidor)
+            eventSource.onerror = (error) => {
+                console.error('EventSource error:', error);
+
+                // Si no hay recomendaciones aún, mostrar error
+                if (recommendations.length === 0) {
+                    showError('Error al conectar con el servidor. Verifica que el servidor esté corriendo.');
+                    loadingContainer.innerHTML = '';
+                }
+
+                // Cerrar conexión
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+
+                // Restaurar botón
+                btn.disabled = false;
+                btn.textContent = '✨ Recibir Enseñanzas Estoicas';
+            };
+        }
+
+        function displayResults(data) {
+            const container = document.getElementById('resultsContainer');
+
+            let html = `
+                <div class="profile-summary">
+                    <h3>📊 Perfil del Discípulo</h3>
+                    <p>${data.user_profile_summary}</p>
+                </div>
+            `;
+
+            if (data.recommendations && data.recommendations.length > 0) {
+                data.recommendations.forEach((rec, index) => {
+                    const difficultyClass = rec.difficulty?.toLowerCase() || 'intermedio';
+
+                    html += `
+                        <div class="recommendation-card">
+                            <div class="rec-header">
+                                <div class="rec-title">${index + 1}. ${rec.title}</div>
+                                <span class="difficulty-badge ${difficultyClass}">
+                                    ${rec.difficulty || 'Intermedio'}
+                                </span>
+                            </div>
+                            <div class="rec-content">${rec.content}</div>
+                            ${rec.source_reference ? `
+                                <div class="rec-source">
+                                    <strong>📜 Fuente:</strong> ${rec.source_reference}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div class="error-message">No se generaron recomendaciones.</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function showError(message) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = `
+                <div class="error-message">
+                    <strong>❌ Error:</strong> ${message}
+                </div>
+            `;
+        }
+
+        // === API Health Check ===
+        async function checkAPI() {
+            const statusEl = document.getElementById('apiStatus');
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    statusEl.textContent = '✅ Servidor conectado - Listo para enseñar';
+                    statusEl.className = 'api-status connected';
+                } else {
+                    statusEl.textContent = '⚠️ Servidor no responde';
+                    statusEl.className = 'api-status disconnected';
+                }
+            } catch {
+                statusEl.textContent = '❌ No se puede conectar al servidor (http://localhost:8000)';
+                statusEl.className = 'api-status disconnected';
+            }
+        }
+
+        // Initialize
+        checkAPI();
+        setInterval(checkAPI, 10000);
+    </script>
+</body>
+</html>
