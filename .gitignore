@@ -1,8 +1,6 @@
 .env
 venv
 index.html
-deploy.py
-setup_ssl.py
-test_connection.py
 __pycache__/
+.claude/
 
