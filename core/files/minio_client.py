@@ -31,9 +31,9 @@ class MinIOClient:
         try:
             if not self.client.bucket_exists(self.bucket_name):
                 self.client.make_bucket(self.bucket_name)
-                print(f"✓ Bucket '{self.bucket_name}' creado en MinIO")
+                print(f"[OK] Bucket '{self.bucket_name}' creado en MinIO")
             else:
-                print(f"✓ Bucket '{self.bucket_name}' ya existe")
+                print(f"[OK] Bucket '{self.bucket_name}' ya existe")
         except S3Error as e:
             raise RuntimeError(f"Error verificando/creando bucket: {e}")
 

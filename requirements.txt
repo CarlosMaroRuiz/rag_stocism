@@ -23,9 +23,10 @@ transformers>=4.41.0,<5.0.0
 torch>=2.0.0
 
 # ==========================================
-# DeepSeek (requiere langchain-core>=1.0.0)
+# OpenAI (requiere langchain-core>=1.0.0)
 # ==========================================
-langchain-deepseek>=1.0.0
+langchain-openai>=0.2.0
+openai>=1.0.0
 
 # ==========================================
 # Postgres + pgvector
@@ -44,5 +45,12 @@ minio>=7.2.0
 # Utilidades
 # ==========================================
 python-dotenv>=1.0.0
-mysql-connector-python
 requests>=2.31.0  # Para test SSE
+mysql-connector-python>=8.0.0
+
+# ==========================================
+# Autenticación JWT
+# ==========================================
+PyJWT>=2.8.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4

@@ -36,7 +36,8 @@ class Environment:
             # ==========================
             # LLM / Embeddings
             # ==========================
-            self.DEEPSEEK_API_KEY: str = os.environ["DEEPSEEK_API_KEY"]
+            self.OPENAI_API_KEY: str = os.environ["OPENAI_API_KEY"]
+            self.OPENAI_MODEL: str = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
             self.EMBEDDING_MODEL: str = os.environ["EMBEDDING_MODEL"]
 
             # ==========================
@@ -55,6 +56,14 @@ class Environment:
             # ==========================
             self.APP_ENV: str = os.environ.get("APP_ENV", "dev")
             self.APP_PORT: int = int(os.environ.get("APP_PORT", 8000))
+
+            # ==========================
+            # JWT Authentication
+            # ==========================
+            self.JWT_SECRET: str = os.environ["JWT_SECRET"]
+            self.JWT_ALGORITHM: str = os.environ.get("JWT_ALGORITHM", "HS256")
+            self.JWT_EXPIRES_IN: int = int(os.environ.get("JWT_EXPIRES_IN", 86400))
+            self.JWT_VERIFICATION_EXPIRES_IN: int = int(os.environ.get("JWT_VERIFICATION_EXPIRES_IN", 86400))
 
         except KeyError as e:
             raise RuntimeError(

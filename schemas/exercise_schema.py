@@ -9,9 +9,13 @@ class AgeRange(str, Enum):
     """Rangos de edad"""
     TEEN = "13-17"
     YOUNG_ADULT = "18-25"
+    YOUNG_ADULT_ALT = "18-24"  # Variante Laravel
     ADULT = "26-35"
+    ADULT_ALT = "25-34"  # Variante Laravel
     MIDDLE_AGE = "36-50"
+    MIDDLE_AGE_ALT = "35-44"  # Variante Laravel
     SENIOR = "51+"
+    SENIOR_ALT = "45+"  # Variante Laravel
 
 
 class Gender(str, Enum):
@@ -37,6 +41,7 @@ class SpiritualPracticeLevel(str, Enum):
     BEGINNER = "principiante"
     INTERMEDIATE = "intermedio"
     ADVANCED = "avanzado"
+    MODERATE = "moderada"
 
 
 class PracticeFrequency(str, Enum):
@@ -45,27 +50,44 @@ class PracticeFrequency(str, Enum):
     OCCASIONALLY = "ocasionalmente"
     WEEKLY = "semanalmente"
     DAILY = "diariamente"
+    DAILY_ALT = "diaria"  # Variante Laravel
     MULTIPLE_TIMES_DAILY = "varias_veces_al_dia"
 
 
 class StoicPath(str, Enum):
     """Caminos/pilares del estoicismo (coinciden con valores de BD)"""
     INNER_PEACE = "Paz Interior"
+    INNER_PEACE_ALT = "paz interior"  # Variante Laravel lowercase
+    INNER_PEACE_UNDERSCORE = "paz_interior" # Variante BD con underscore
     SELF_CONTROL = "Autocontrol"
+    SELF_CONTROL_ALT = "autocontrol"  # Variante Laravel lowercase
     WISDOM = "Sabiduría"
+    WISDOM_ALT = "sabiduría"  # Variante Laravel lowercase
+    WISDOM_NO_ACCENT = "sabiduria"  # Sin acento
     RESILIENCE = "Resiliencia"
+    RESILIENCE_ALT = "resiliencia"  # Variante Laravel lowercase
     GRATITUDE = "Gratitud"
+    GRATITUDE_ALT = "gratitud"  # Variante Laravel lowercase
     JUSTICE = "Justicia"
+    JUSTICE_ALT = "justicia"  # Variante Laravel lowercase
     COURAGE = "Coraje"
+    COURAGE_ALT = "coraje"  # Variante Laravel lowercase
     TEMPERANCE = "Templanza"
+    TEMPERANCE_ALT = "templanza"  # Variante Laravel lowercase
+    VIRTUE = "virtud"  # Variante Laravel - concepto general
 
 
 class DailyChallenge(str, Enum):
     """Desafíos y prácticas diarias (coinciden con valores de BD)"""
     # Prácticas estoicas
     MORNING_MEDITATION = "meditacion_matutina"
+    MEDITATION = "meditación"  # Variante Laravel
+    MEDITATION_ALT = "meditacion"  # Sin acento
     EVENING_REFLECTION = "reflexion_nocturna"
+    REFLECTION = "reflexión"  # Variante Laravel
+    REFLECTION_ALT = "reflexion"  # Sin acento
     STOIC_JOURNAL = "diario_estoico"
+    JOURNAL = "diario"  # Variante Laravel
     NEGATIVE_VISUALIZATION = "visualizacion_negativa"
 
     # Desafíos emocionales
@@ -82,11 +104,17 @@ class DailyChallenge(str, Enum):
     RELATIONSHIPS = "relaciones"
     WORK_PRESSURE = "presion_laboral"
 
+    # Práct icas adicionales
+    PHYSICAL_EXERCISE = "ejercicio_fisico"  # Variante Laravel
+
+    # Valores adicionales de Laravel
+    GRATITUDE_PRACTICE = "gratitud"  # Variante Laravel
+
 
 # ===== REQUESTS =====
 
-class GenerateRecommendationRequest(BaseModel):
-    """Request simple para generar recomendaciones (solo necesita user_id)"""
+class GenerateExerciseRequest(BaseModel):
+    """Request simple para generar ejercicios (solo necesita user_id)"""
     user_id: Optional[str] = Field(
         None,
         description="ID del usuario (temporal hasta implementar JWT)"
@@ -135,36 +163,32 @@ class StoicQuizRequest(BaseModel):
     )
 
     # Configuración opcional
-    num_recommendations: int = Field(
+    num_exercises: int = Field(
         default=5,
         ge=1,
         le=10,
-        description="Número de recomendaciones a generar"
+        description="Número de ejercicios a generar"
     )
 
 
 # ===== RESPONSES =====
 
-class Recommendation(BaseModel):
-    """Una recomendación/enseñanza estoica"""
-    title: str = Field(..., description="Título de la enseñanza estoica")
-    content: str = Field(..., description="Explicación detallada y ejercicio práctico")
-    source_reference: Optional[str] = Field(
+class Exercise(BaseModel):
+    """Un ejercicio práctico estoico personalizado"""
+    name: str = Field(..., description="Nombre del ejercicio")
+    level: str = Field(..., description="Nivel estoico: principiante, intermedio, avanzado, maestro")
+    objective: str = Field(..., description="Objetivo del ejercicio")
+    instructions: str = Field(..., description="Instrucciones claras y prácticas paso a paso")
+    duration: str = Field(..., description="Duración del ejercicio (ej: 1 día, 3 días, 1 semana)")
+    reflection: str = Field(..., description="Pregunta de reflexión o autoevaluación final")
+    source: Optional[str] = Field(
         None,
-        description="Cita del texto estoico (Marco Aurelio, Epicteto, Séneca)"
-    )
-    difficulty: str = Field(
-        ...,
-        description="Nivel de dificultad: fácil, intermedio, difícil"
-    )
-    stoic_virtue: Optional[StoicPath] = Field(
-        None,
-        description="Virtud/camino estoico relacionado"
+        description="Fuente del libro estoico de donde se obtuvo el ejercicio"
     )
 
 
-class GenerateRecommendationsResponse(BaseModel):
-    """Respuesta con recomendaciones estoicas personalizadas"""
+class GenerateExercisesResponse(BaseModel):
+    """Respuesta con ejercicios estoicos personalizados"""
     user_profile_summary: str = Field(
         ...,
         description="Resumen del perfil del usuario"
@@ -173,9 +197,9 @@ class GenerateRecommendationsResponse(BaseModel):
         default="estoicismo",
         description="Tema (siempre estoicismo en este sistema)"
     )
-    recommendations: List[Recommendation] = Field(
+    exercises: List[Exercise] = Field(
         ...,
-        description="Lista de enseñanzas estoicas personalizadas"
+        description="Lista de ejercicios estoicos personalizados"
     )
 
 

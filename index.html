@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,38 +95,6 @@
             gap: 10px;
         }
 
-        .test-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .test-button {
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
-            color: white;
-            border: 2px solid #c9a961;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-align: center;
-        }
-
-        .test-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(201, 169, 97, 0.3);
-            background: linear-gradient(135deg, #c9a961 0%, #b8954d 100%);
-            color: #2c3e50;
-        }
-
-        .test-button.active {
-            background: linear-gradient(135deg, #c9a961 0%, #b8954d 100%);
-            color: #2c3e50;
-        }
-
         .input-group {
             margin-bottom: 20px;
         }
@@ -198,7 +167,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .results-container {
@@ -220,7 +191,7 @@
             font-size: 16px;
         }
 
-        .recommendation-card {
+        .exercise-card {
             background: white;
             border: 2px solid #ecf0f1;
             border-left: 5px solid #c9a961;
@@ -231,7 +202,7 @@
             transition: all 0.3s;
         }
 
-        .recommendation-card:hover {
+        .exercise-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
             border-left-color: #b8954d;
@@ -262,7 +233,7 @@
             white-space: nowrap;
         }
 
-        .difficulty-badge.fácil {
+        .difficulty-badge.principiante {
             background: #d4edda;
             color: #155724;
         }
@@ -272,9 +243,14 @@
             color: #856404;
         }
 
-        .difficulty-badge.difícil {
-            background: #f8d7da;
-            color: #721c24;
+        .difficulty-badge.avanzado {
+            background: #ffd4a3;
+            color: #8b4513;
+        }
+
+        .difficulty-badge.maestro {
+            background: #e0c3fc;
+            color: #5a189a;
         }
 
         .rec-content {
@@ -391,9 +367,12 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <h1>⚡ MENTOR ESTOICO DIGITAL</h1>
+        <h1>⚡ MENTOR ESTOICO DIGITAL <span
+                style="font-size: 12px; vertical-align: middle; background: #c9a961; color: #2c3e50; padding: 2px 6px; border-radius: 4px;">v1.2</span>
+        </h1>
         <div class="greek-text">Σοφία • Ἀνδρεία • Δικαιοσύνη • Σωφροσύνη</div>
         <p class="subtitle">Sabiduría • Coraje • Justicia • Templanza</p>
 
@@ -416,34 +395,24 @@
             <div class="file-list" id="fileList"></div>
         </div>
 
-        <!-- Sección de Prueba Rápida -->
+        <!-- Sección de Autenticación JWT -->
         <div class="section">
-            <div class="section-title">🧪 Modo de Prueba</div>
+            <div class="section-title">🔐 Autenticación JWT</div>
 
-            <div class="test-buttons">
-                <button class="test-button" onclick="useTestUser('7e41ec3e-344a-42d4-8aba-f75196098e10')">
-                    Usuario Test 1<br>
-                    <small style="opacity: 0.8;">México • Ocasional</small>
-                </button>
-                <button class="test-button" onclick="useCustomUser()">
-                    Usuario Personalizado<br>
-                    <small style="opacity: 0.8;">Ingresa tu ID</small>
-                </button>
-            </div>
-
-            <div class="input-group" id="customUserInput" style="display: none;">
-                <label for="userId">ID de Usuario (de la base de datos):</label>
-                <input type="text"
-                       id="userId"
-                       placeholder="ej: 7e41ec3e-344a-42d4-8aba-f75196098e10"
-                       value="7e41ec3e-344a-42d4-8aba-f75196098e10">
+            <div class="input-group">
+                <label for="jwtToken">Token JWT (Generado por Laravel):</label>
+                <input type="text" id="jwtToken" placeholder="Pega aquí tu token JWT de la API de PHP/Laravel"
+                    style="font-family: monospace; font-size: 12px;">
+                <small style="color: #7f8c8d; margin-top: 5px; display: block;">
+                    🔑 El token debe ser generado por tu API de Laravel y contiene tu user_id
+                </small>
             </div>
         </div>
 
         <!-- Botón Principal -->
         <div class="section">
-            <button class="main-button" onclick="generateRecommendations()" id="generateBtn">
-                ✨ Recibir Enseñanzas Estoicas
+            <button class="main-button" onclick="generateExercises()" id="generateBtn">
+                ✨ Recibir Ejercicios Estoicos
             </button>
 
             <div id="loadingContainer"></div>
@@ -458,34 +427,6 @@
 
     <script>
         const API_URL = 'http://localhost:8000';
-        let currentUserId = '7e41ec3e-344a-42d4-8aba-f75196098e10';
-
-        // === Test User Selection ===
-        function useTestUser(userId) {
-            currentUserId = userId;
-            document.getElementById('userId').value = userId;
-            document.getElementById('customUserInput').style.display = 'none';
-
-            // Update button states
-            document.querySelectorAll('.test-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-        }
-
-        function useCustomUser() {
-            document.getElementById('customUserInput').style.display = 'block';
-            document.querySelectorAll('.test-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            currentUserId = document.getElementById('userId').value;
-        }
-
-        // Update currentUserId when input changes
-        document.getElementById('userId')?.addEventListener('input', (e) => {
-            currentUserId = e.target.value;
-        });
 
         // === Upload Functionality ===
         const uploadArea = document.getElementById('uploadArea');
@@ -567,22 +508,17 @@
             }
         }
 
-        // === Generate Recommendations con Server-Sent Events ===
-        let eventSource = null;
+        // === Generate Exercises con JWT y Server-Sent Events ===
+        let abortController = null;
 
-        function generateRecommendations() {
-            const userId = currentUserId || document.getElementById('userId').value.trim();
+        async function generateExercises() {
+            // Obtener JWT token
+            const token = document.getElementById('jwtToken').value.trim();
 
-            if (!userId) {
-                alert('Por favor selecciona un usuario de prueba o ingresa un ID de usuario');
+            if (!token) {
+                alert('❌ Por favor ingresa un token JWT válido.\n\nDebes generar el token desde tu API de Laravel.');
                 return;
             }
-
-            // Cerrar conexión previa si existe
-            if (eventSource) {
-                eventSource.close();
-            }
-
             const btn = document.getElementById('generateBtn');
             btn.disabled = true;
             btn.textContent = '⏳ Conectando con los maestros estoicos...';
@@ -591,7 +527,7 @@
             loadingContainer.innerHTML = `
                 <div class="loading-container">
                     <div class="loading-spinner"></div>
-                    <div id="statusMessage">Iniciando conexión...</div>
+                    <div id="statusMessage">🔐 Autenticando con JWT...</div>
                     <small style="color: #95a5a6; margin-top: 10px;">
                         Marco Aurelio • Epicteto • Séneca
                     </small>
@@ -601,184 +537,191 @@
             const resultsContainer = document.getElementById('resultsContainer');
             resultsContainer.innerHTML = '';
 
-            // Crear conexión SSE
-            eventSource = new EventSource(`${API_URL}/generate/recommendations/stream?user_id=${encodeURIComponent(userId)}`);
+            // Cancelar petición previa si existe
+            if (abortController) {
+                abortController.abort();
+            }
+            abortController = new AbortController();
 
-            let recommendations = [];
-            let profileSummary = '';
+            let exercises = [];
 
-            // Eventos del servidor
-            eventSource.addEventListener('status', (event) => {
-                const data = JSON.parse(event.data);
-                document.getElementById('statusMessage').textContent = data.message;
-            });
+            try {
+                const response = await fetch(`${API_URL}/generate/exercises/stream`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'text/event-stream'
+                    },
+                    signal: abortController.signal
+                });
 
-            eventSource.addEventListener('profile', (event) => {
-                const data = JSON.parse(event.data);
-                profileSummary = data.summary;
-
-                // Mostrar perfil
-                resultsContainer.innerHTML = `
-                    <div class="profile-summary">
-                        <h3>📊 Perfil del Discípulo</h3>
-                        <p>${data.summary}</p>
-                    </div>
-                    <div id="recommendationsContainer"></div>
-                `;
-            });
-
-            eventSource.addEventListener('recommendation', (event) => {
-                const rec = JSON.parse(event.data);
-                recommendations.push(rec);
-
-                // Actualizar mensaje de progreso
-                document.getElementById('statusMessage').textContent =
-                    `Recibiendo enseñanza ${rec.index} de ${rec.total}...`;
-
-                // Agregar recomendación con animación
-                const recContainer = document.getElementById('recommendationsContainer');
-                const difficultyClass = rec.difficulty?.toLowerCase() || 'intermedio';
-
-                const recCard = document.createElement('div');
-                recCard.className = 'recommendation-card';
-                recCard.style.opacity = '0';
-                recCard.style.transform = 'translateY(20px)';
-                recCard.innerHTML = `
-                    <div class="rec-header">
-                        <div class="rec-title">${rec.index}. ${rec.title}</div>
-                        <span class="difficulty-badge ${difficultyClass}">
-                            ${rec.difficulty || 'Intermedio'}
-                        </span>
-                    </div>
-                    <div class="rec-content">${rec.content}</div>
-                    ${rec.source_reference ? `
-                        <div class="rec-source">
-                            <strong>📜 Fuente:</strong> ${rec.source_reference}
-                        </div>
-                    ` : ''}
-                `;
-
-                recContainer.appendChild(recCard);
-
-                // Animar entrada
-                setTimeout(() => {
-                    recCard.style.transition = 'all 0.5s ease';
-                    recCard.style.opacity = '1';
-                    recCard.style.transform = 'translateY(0)';
-                }, 50);
-
-                // Scroll suave hacia la nueva recomendación
-                recCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            });
-
-            eventSource.addEventListener('complete', (event) => {
-                const data = JSON.parse(event.data);
-                loadingContainer.innerHTML = `
-                    <div class="loading-container" style="color: #27ae60;">
-                        <div style="font-size: 40px; margin-bottom: 10px;">✓</div>
-                        <div>${data.message}</div>
-                        <small style="color: #7f8c8d; margin-top: 10px;">
-                            Total: ${data.total} enseñanzas estoicas
-                        </small>
-                    </div>
-                `;
-
-                // Cerrar conexión
-                eventSource.close();
-                eventSource = null;
-
-                // Restaurar botón
-                setTimeout(() => {
+                // Manejar errores de autenticación
+                if (response.status === 401) {
+                    showError('❌ Token JWT inválido o expirado. Por favor genera un nuevo token desde Laravel.');
                     btn.disabled = false;
-                    btn.textContent = '✨ Recibir Nuevas Enseñanzas';
+                    btn.textContent = '✨ Recibir Ejercicios Estoicos';
                     loadingContainer.innerHTML = '';
-                }, 3000);
-            });
+                    return;
+                }
 
-            eventSource.addEventListener('error', (event) => {
-                let errorMsg = 'Error de conexión con el servidor';
+                if (response.status === 403) {
+                    showError('❌ Email no verificado. Por favor verifica tu correo electrónico antes de continuar.');
+                    btn.disabled = false;
+                    btn.textContent = '✨ Recibir Ejercicios Estoicos';
+                    loadingContainer.innerHTML = '';
+                    return;
+                }
 
-                if (event.data) {
-                    try {
-                        const data = JSON.parse(event.data);
-                        errorMsg = data.error || errorMsg;
-                    } catch (e) {
-                        // Error parsing, usar mensaje por defecto
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    showError(`Error del servidor: ${errorText}`);
+                    btn.disabled = false;
+                    btn.textContent = '✨ Recibir Ejercicios Estoicos';
+                    loadingContainer.innerHTML = '';
+                    return;
+                }
+
+                // Procesar stream SSE manualmente
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                document.getElementById('statusMessage').textContent = '✅ Autenticado - Recibiendo ejercicios...';
+
+                let currentEvent = null; // Rastrear el tipo de evento actual
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Guardar última línea incompleta
+
+                    for (const line of lines) {
+                        // Parsear tipo de evento
+                        if (line.startsWith('event: ')) {
+                            currentEvent = line.slice(7).trim(); // Remover "event: "
+                        }
+                        // Parsear datos del evento
+                        else if (line.startsWith('data: ')) {
+                            const data = line.slice(6).trim(); // Remover "data: "
+
+                            try {
+                                const jsonData = JSON.parse(data);
+
+                                // Manejar según el tipo de evento
+                                if (currentEvent === 'status') {
+                                    // Actualizar mensaje de estado
+                                    document.getElementById('statusMessage').textContent = jsonData.message;
+                                }
+                                else if (currentEvent === 'profile') {
+                                    // Mostrar perfil del usuario
+                                    resultsContainer.innerHTML = `
+                                        <div class="profile-summary">
+                                            <h3>📊 Perfil del Discípulo</h3>
+                                            <p>${jsonData.summary}</p>
+                                        </div>
+                                        <div id="exercisesContainer"></div>
+                                    `;
+                                }
+                                else if (currentEvent === 'exercise') {
+                                    // Agregar ejercicio
+                                    exercises.push(jsonData);
+                                    addExerciseCard(jsonData);
+                                }
+                                else if (currentEvent === 'complete') {
+                                    // Finalización
+                                    loadingContainer.innerHTML = `
+                                        <div class="loading-container" style="color: #27ae60;">
+                                            <div style="font-size: 40px; margin-bottom: 10px;">✓</div>
+                                            <div>${jsonData.message || 'Ejercicios generados con éxito'}</div>
+                                            <small style="color: #7f8c8d; margin-top: 10px;">
+                                                Total: ${jsonData.total} ejercicios estoicos
+                                            </small>
+                                        </div>
+                                    `;
+
+                                    setTimeout(() => {
+                                        btn.disabled = false;
+                                        btn.textContent = '✨ Recibir Nuevos Ejercicios';
+                                        loadingContainer.innerHTML = '';
+                                    }, 3000);
+                                }
+                                else if (currentEvent === 'error') {
+                                    // Manejo de errores
+                                    showError(jsonData.error || 'Error desconocido');
+                                    btn.disabled = false;
+                                    btn.textContent = '✨ Recibir Ejercicios Estoicos';
+                                    loadingContainer.innerHTML = '';
+                                }
+
+                                // Resetear el evento después de procesarlo
+                                currentEvent = null;
+
+                            } catch (e) {
+                                console.error('Error parsing JSON:', e, data);
+                            }
+                        }
                     }
                 }
 
-                showError(errorMsg);
-
-                // Cerrar conexión
-                if (eventSource) {
-                    eventSource.close();
-                    eventSource = null;
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Request aborted');
+                    return;
                 }
 
-                // Restaurar botón
+                console.error('Fetch error:', error);
+                showError('Error al conectar con el servidor. Verifica que el servidor esté corriendo.');
                 btn.disabled = false;
-                btn.textContent = '✨ Recibir Enseñanzas Estoicas';
+                btn.textContent = '✨ Recibir Ejercicios Estoicos';
                 loadingContainer.innerHTML = '';
-            });
-
-            // Error de conexión (no es evento del servidor)
-            eventSource.onerror = (error) => {
-                console.error('EventSource error:', error);
-
-                // Si no hay recomendaciones aún, mostrar error
-                if (recommendations.length === 0) {
-                    showError('Error al conectar con el servidor. Verifica que el servidor esté corriendo.');
-                    loadingContainer.innerHTML = '';
-                }
-
-                // Cerrar conexión
-                if (eventSource) {
-                    eventSource.close();
-                    eventSource = null;
-                }
-
-                // Restaurar botón
-                btn.disabled = false;
-                btn.textContent = '✨ Recibir Enseñanzas Estoicas';
-            };
+            }
         }
 
-        function displayResults(data) {
-            const container = document.getElementById('resultsContainer');
+        // === Helper para agregar tarjeta de ejercicio ===
+        function addExerciseCard(ex) {
+            const recContainer = document.getElementById('exercisesContainer');
+            if (!recContainer) return;
 
-            let html = `
-                <div class="profile-summary">
-                    <h3>📊 Perfil del Discípulo</h3>
-                    <p>${data.user_profile_summary}</p>
+            const levelClass = ex.level?.toLowerCase() || 'principiante';
+
+            const exCard = document.createElement('div');
+            exCard.className = 'exercise-card';
+            exCard.style.opacity = '0';
+            exCard.style.transform = 'translateY(20px)';
+            exCard.innerHTML = `
+                <div class="rec-header">
+                    <div class="rec-title">${ex.index || ''}. ${ex.name}</div>
+                    <span class="difficulty-badge ${levelClass}">
+                        ${ex.level || 'Principiante'}
+                    </span>
                 </div>
+                <div class="rec-content">
+                    <p><strong>🎯 Objetivo:</strong> ${ex.objective}</p>
+                    <p><strong>📋 Instrucciones:</strong><br>${ex.instructions}</p>
+                    <p><strong>⏱️ Duración:</strong> ${ex.duration}</p>
+                    <p><strong>💭 Reflexión:</strong> ${ex.reflection}</p>
+                </div>
+                ${ex.source ? `
+                    <div class="rec-source">
+                        <strong>📜 Fuente:</strong> ${ex.source}
+                    </div>
+                ` : ''}
             `;
 
-            if (data.recommendations && data.recommendations.length > 0) {
-                data.recommendations.forEach((rec, index) => {
-                    const difficultyClass = rec.difficulty?.toLowerCase() || 'intermedio';
+            recContainer.appendChild(exCard);
 
-                    html += `
-                        <div class="recommendation-card">
-                            <div class="rec-header">
-                                <div class="rec-title">${index + 1}. ${rec.title}</div>
-                                <span class="difficulty-badge ${difficultyClass}">
-                                    ${rec.difficulty || 'Intermedio'}
-                                </span>
-                            </div>
-                            <div class="rec-content">${rec.content}</div>
-                            ${rec.source_reference ? `
-                                <div class="rec-source">
-                                    <strong>📜 Fuente:</strong> ${rec.source_reference}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                });
-            } else {
-                html += '<div class="error-message">No se generaron recomendaciones.</div>';
-            }
+            // Animar entrada
+            setTimeout(() => {
+                exCard.style.transition = 'all 0.5s ease';
+                exCard.style.opacity = '1';
+                exCard.style.transform = 'translateY(0)';
+            }, 50);
 
-            container.innerHTML = html;
+            // Scroll suave hacia el nuevo ejercicio
+            exCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         function showError(message) {
@@ -794,16 +737,22 @@
         async function checkAPI() {
             const statusEl = document.getElementById('apiStatus');
             try {
-                const response = await fetch(`${API_URL}/health`);
+                const response = await fetch(`${API_URL}/health?_=${new Date().getTime()}`);
                 if (response.ok) {
-                    statusEl.textContent = '✅ Servidor conectado - Listo para enseñar';
-                    statusEl.className = 'api-status connected';
+                    const data = await response.json().catch(() => ({}));
+                    if (data.status === 'healthy') {
+                        statusEl.textContent = '✅ Servidor conectado - Listo para entrenar';
+                        statusEl.className = 'api-status connected';
+                    } else {
+                        throw new Error('Respuesta inválida');
+                    }
                 } else {
-                    statusEl.textContent = '⚠️ Servidor no responde';
+                    statusEl.textContent = '⚠️ Servidor no responde (Error HTTP)';
                     statusEl.className = 'api-status disconnected';
                 }
-            } catch {
-                statusEl.textContent = '❌ No se puede conectar al servidor (http://localhost:8000)';
+            } catch (e) {
+                console.log('Health check failed:', e);
+                statusEl.textContent = '❌ No se puede conectar al servidor (Servidor apagado)';
                 statusEl.className = 'api-status disconnected';
             }
         }
@@ -813,4 +762,5 @@
         setInterval(checkAPI, 10000);
     </script>
 </body>
+
 </html>

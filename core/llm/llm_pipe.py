@@ -7,10 +7,9 @@ from langchain_postgres import PGVector
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-from langchain_deepseek import ChatDeepSeek
+from langchain_openai import ChatOpenAI
 
 from core.enviroment import env
-
 
 class LlmPipe:
     def __init__(self):
@@ -28,11 +27,11 @@ class LlmPipe:
             use_jsonb=True,
         )
 
-        # LLM DeepSeek
-        self.llm = ChatDeepSeek(
-            model="deepseek-chat",
+        # LLM OpenAI
+        self.llm = ChatOpenAI(
+            model=env.OPENAI_MODEL,
             temperature=0.3,
-            api_key=env.DEEPSEEK_API_KEY,
+            api_key=env.OPENAI_API_KEY,
         )
 
     def ingest_pdf(
@@ -97,36 +96,62 @@ class LlmPipe:
             "minio_path": minio_path,
         }
 
-    def generate_recommendations(
-        self, 
+    def generate_single_exercise(
+        self,
         user_profile: Dict,
-        k: int = 5
+        exercise_number: int,
+        total_exercises: int,
+        context_text: str,
+        source_file: str
     ) -> str:
         """
-        Genera recomendaciones personalizadas basadas en:
-        - El perfil del usuario
-        - Contenido del libro (RAG)
+        Genera UN solo ejercicio estoico práctico para streaming en tiempo real.
+
+        Args:
+            user_profile: Perfil del usuario
+            exercise_number: Número de este ejercicio (1-based)
+            total_exercises: Total de ejercicios a generar
+            context_text: Contexto de textos estoicos
+            source_file: Nombre del archivo fuente
+
+        Returns:
+            JSON con un solo ejercicio
         """
-        
-        search_query = self._build_search_query(user_profile)
-        
-        retriever = self.vector_store.as_retriever(search_kwargs={"k": k})
-        docs = retriever.invoke(search_query)
-
-        if not docs:
-            return self._generate_without_context(user_profile)
-
-        context_text = "\n\n".join([d.page_content for d in docs])
-        source_file = docs[0].metadata.get("file_name", "libro desconocido")
-
-        prompt = self._build_recommendation_prompt(
+        prompt = self._build_single_exercise_prompt(
             user_profile=user_profile,
+            exercise_number=exercise_number,
+            total_exercises=total_exercises,
             context=context_text,
             source_file=source_file
         )
 
         resp = self.llm.invoke(prompt)
         return resp.content
+
+    def get_stoic_context(self, user_profile: Dict, k: int = 5) -> tuple[str, str]:
+        """
+        Obtiene el contexto de textos estoicos una sola vez para todas las recomendaciones.
+
+        Returns:
+            Tuple de (context_text, source_file)
+        """
+        search_query = self._build_search_query(user_profile)
+
+        retriever = self.vector_store.as_retriever(search_kwargs={"k": k})
+        docs = retriever.invoke(search_query)
+
+        if not docs:
+            return ("", "principios fundamentales del estoicismo")
+
+        context_text = "\n\n".join([d.page_content for d in docs])
+        source_file = docs[0].metadata.get("file_name", "textos estoicos")
+
+        # Limpiar el nombre del archivo: eliminar UUID de MinIO si existe
+        # Formato: "uuid_nombre.pdf" -> "nombre.pdf"
+        import re
+        source_file = re.sub(r'^[a-f0-9\-]{36}_', '', source_file)
+
+        return (context_text, source_file)
 
     def _build_search_query(self, profile: Dict) -> str:
         """Construye query optimizada para búsqueda en textos estoicos"""
@@ -153,13 +178,229 @@ class LlmPipe:
 
         return " ".join(parts)
 
-    def _build_recommendation_prompt(
+    def _build_single_exercise_prompt(
+        self,
+        user_profile: Dict,
+        exercise_number: int,
+        total_exercises: int,
+        context: str,
+        source_file: str
+    ) -> str:
+        """Construye el prompt para generar UN solo ejercicio estoico práctico (streaming)"""
+
+        # Extraer valores de enums si es necesario
+        def get_value(item):
+            return item.value if hasattr(item, 'value') else str(item)
+
+        age_range = get_value(user_profile.get('age_range', 'adulto'))
+        practice_level = get_value(user_profile.get('practice_level', 'principiante'))
+        practice_freq = get_value(user_profile.get('practice_frequency', 'ocasionalmente'))
+        stoic_level = get_value(user_profile.get('stoic_level', 'principiante'))
+
+        # Procesar listas
+        stoic_paths = user_profile.get('stoic_paths', [])
+        paths_str = ', '.join([get_value(p) for p in stoic_paths]) if stoic_paths else 'No especificados'
+
+        daily_challenges = user_profile.get('daily_challenges', [])
+        challenges_str = ', '.join([get_value(c) for c in daily_challenges]) if daily_challenges else 'No especificados'
+
+        belief = user_profile.get('belief', 'No especificada')
+        country = user_profile.get('country', '')
+
+        profile_summary = f"""
+PERFIL DEL PRACTICANTE:
+- Rango de edad: {age_range}
+- País: {country}
+- Creencia actual: {belief}
+- Nivel de práctica espiritual: {practice_level} (frecuencia: {practice_freq})
+- Nivel de conocimiento estoico: {stoic_level}
+- Caminos estoicos de interés: {paths_str}
+- Desafíos/prácticas diarias: {challenges_str}
+"""
+
+        # Determinar enfoque basado en el número de ejercicio
+        # Lista ampliada de áreas de enfoque estoico para máxima variedad
+        focus_areas = [
+            # Principios fundamentales
+            "Dicotomía del Control - Distinguir lo que depende de ti",
+            "Virtudes Cardinales - Sabiduría, Coraje, Justicia, Templanza",
+            "Vivir según la Naturaleza - Alineación con el cosmos",
+            "Amor Fati - Aceptación radical del destino",
+            "Memento Mori - Consciencia de la mortalidad",
+
+            # Prácticas de autocontrol
+            "Autocontrol - Gestión de impulsos y deseos",
+            "Indiferencia ante circunstancias externas - Ecuanimidad",
+            "Desapego de resultados - Enfoque en el proceso",
+            "Juicios y percepciones - Observación sin valoración",
+            "Gestión de emociones destructivas - Ira, miedo, ansiedad",
+
+            # Ejercicios espirituales clásicos
+            "Premeditatio Malorum - Visualización negativa",
+            "Examen diario - Revisión de acciones y pensamientos",
+            "Meditación matutina - Preparación para el día",
+            "Contemplación vespertina - Reflexión sobre virtudes",
+            "Vista desde arriba - Perspectiva cósmica",
+
+            # Virtudes específicas
+            "Sabiduría práctica - Phronesis en decisiones diarias",
+            "Coraje moral - Enfrentar adversidades con valor",
+            "Justicia y benevolencia - Trato equitativo hacia otros",
+            "Templanza y moderación - Equilibrio en placeres",
+            "Fortaleza interior - Resiliencia ante dificultades",
+
+            # Relaciones y comunidad
+            "Cosmopolitismo - Ciudadano del mundo",
+            "Empatía y comprensión - Ver desde perspectiva ajena",
+            "Perdón y compasión - Liberación del resentimiento",
+            "Servicio a la comunidad - Bien común sobre interés personal",
+            "Relaciones virtuosas - Amistades basadas en virtud",
+
+            # Desapego y aceptación
+            "Desapego de posesiones - Libertad interior",
+            "Aceptación de cambio e impermanencia - Heráclito",
+            "Simplicidad voluntaria - Reducción de necesidades",
+            "Indiferencia a la fama y reputación - Ego y vanidad",
+            "Aceptación de la muerte - Tranquilidad ante lo inevitable",
+
+            # Razón y logos
+            "Razón como guía - Hegemonikon y facultad gobernante",
+            "Assentimiento consciente - Control de impresiones",
+            "Lógica estoica - Claridad de pensamiento",
+            "Contemplación filosófica - Estudio de la naturaleza",
+            "Coherencia entre pensamientos y acciones - Integridad",
+
+            # Prácticas avanzadas
+            "Atención plena estoica - Prosoche",
+            "Reserva de clausura - Anticipación de obstáculos",
+            "Ejercicio de roles - Padre, hijo, ciudadano",
+            "Gratitud estoica - Apreciar lo presente",
+            "Transformación de adversidad - Obstáculo como oportunidad",
+
+            # Desarrollo del carácter
+            "Progreso moral - Prokope",
+            "Hábitos virtuosos - Construcción de carácter",
+            "Eliminación de vicios - Identificación y corrección",
+            "Coherencia interna - Alineación de valores",
+            "Autosuficiencia - Autarquía estoica",
+
+            # Sabiduría aplicada
+            "Decisiones según naturaleza racional - Kata physin",
+            "Preferibles vs indiferentes - Adiaphora",
+            "Deber apropiado - Kathekonta",
+            "Sabiduría en adversidad - Enseñanzas de Epicteto",
+            "Acción recta - Katorthoma",
+
+            # Perspectiva y contexto
+            "Relatividad del juicio - Opiniones como construcciones",
+            "Zoom out cósmico - Pequeñez en el universo",
+            "Transitoriedad - Todo fluye y cambia",
+            "Interconexión universal - Simpatía cósmica",
+            "Ciclos naturales - Aceptación del ritmo de la vida"
+        ]
+
+        current_focus = focus_areas[(exercise_number - 1) % len(focus_areas)]
+
+        # Guía de niveles
+        level_guide = """
+NIVELES ESTOICOS:
+
+📗 PRINCIPIANTE:
+- Ejercicios simples, cortos (1 día)
+- Conceptos básicos: Dicotomía del Control, Observación de emociones
+- Lenguaje claro, motivador y accesible
+- Ejemplos cotidianos modernos
+
+📘 INTERMEDIO:
+- Ejercicios que requieren reflexión diaria (3-7 días)
+- Aplicación en conflictos reales
+- Juicios y percepciones, resiliencia emocional
+- Seguimiento constante
+
+📙 AVANZADO:
+- Prácticas profundas de dominio interior (1-2 semanas)
+- Desapego, virtud, responsabilidad moral
+- Premeditatio malorum, Amor fati
+- Alto nivel de disciplina
+
+📕 MAESTRO:
+- Integración completa del estoicismo (1 mes+)
+- Transformación de carácter profunda
+- Aplicación universal de principios
+- Máximo nivel de exigencia
+"""
+
+        prompt = f"""Eres un maestro que genera EJERCICIOS PRÁCTICOS personalizados basados en filosofía estoica para ayudar al usuario a desarrollar dominio del temperamento, autocontrol, virtud y claridad mental.
+
+{level_guide}
+
+{profile_summary}
+
+CONTENIDO DEL LIBRO "{source_file}":
+{context}
+
+INSTRUCCIONES:
+Estás generando el ejercicio #{exercise_number} de {total_exercises} para este practicante.
+
+ENFOQUE PARA ESTE EJERCICIO: {current_focus}
+
+El ejercicio debe:
+1. Estar DIRECTAMENTE INSPIRADO en el CONTENIDO DEL LIBRO proporcionado arriba
+2. Extraer ideas, principios y enseñanzas específicas del texto
+3. Enfocarse en: {current_focus}
+4. Ser relevante a los caminos de interés: {paths_str}
+5. Abordar sus desafíos específicos: {challenges_str}
+6. Adaptarse a su nivel: {stoic_level}
+7. Ser aplicable a la vida cotidiana HOY
+8. Incluir reflexión o autoevaluación
+
+Enfoque por nivel:
+- "principiante": Simple, 1 día, conceptos básicos, muy accesible
+- "intermedio": 3-7 días, reflexión diaria, aplicación en conflictos
+- "avanzado": 1-2 semanas, dominio interior profundo, desapego
+- "maestro": 1 mes+, transformación de carácter, máxima exigencia
+
+FORMATO DE RESPUESTA (JSON con UN solo ejercicio):
+{{
+  "name": "Nombre descriptivo del ejercicio basado en el contenido del libro",
+  "level": "{stoic_level}",
+  "objective": "Objetivo claro y específico conectado con las enseñanzas del texto",
+  "instructions": "Instrucciones paso a paso muy claras y prácticas, inspiradas en las ideas del libro. Sé específico sobre qué hacer, cuándo hacerlo, y cómo aplicarlo en la vida diaria.",
+  "duration": "Duración del ejercicio según el nivel (ej: '1 día', '3 días', '1 semana', '1 mes')",
+  "reflection": "Pregunta de reflexión o autoevaluación relacionada con el ejercicio",
+  "source": "INCLUYE: 1) El nombre del libro fuente '{source_file}', 2) El autor/concepto que aparece en el contenido, 3) Capítulo o sección si está disponible. Formato: 'De [libro] - [autor], [capítulo/concepto]'. Ejemplo: 'De 24 Stoic Spiritual Exercises - Epictetus, Enchiridion IV'"
+}}
+
+TONO Y ESTILO:
+- Directo y práctico
+- Instrucciones claras que cualquiera pueda seguir
+- Conecta las enseñanzas del libro con desafíos modernos
+- Motivador pero realista
+- Enfoque estoico basado en el CONTENIDO REAL del libro
+
+CRÍTICO - MUY IMPORTANTE:
+- RESPONDE SOLO CON EL JSON, SIN TEXTO ADICIONAL
+- Basa el ejercicio en las IDEAS ESPECÍFICAS del contenido proporcionado
+- Las instrucciones deben ser específicas y accionables
+- La duración debe corresponder al nivel del usuario
+- El ejercicio debe complementar los otros {total_exercises - 1} ejercicios
+- NO repitas ejercicios, cada uno debe ser único
+- En el campo "source": SIEMPRE incluye el nombre del libro "{source_file}" + el autor/concepto del contenido
+- FORMATO DE SOURCE: "De [nombre_libro] - [autor], [capítulo/concepto]"
+- EXTRAE Y CITA a los autores que aparecen en el contenido del libro para dar VARIEDAD
+- Si el texto menciona autores específicos (Marcus Aurelius, Epictetus, Seneca, u otros), ÚSALOS
+- Si el texto menciona un libro específico o capítulo, inclúyelo después del autor
+- Proporciona referencias DIVERSAS basadas en lo que realmente dice el contenido
+"""
+        return prompt
+
+    def _build_exercise_batch_prompt(
         self,
         user_profile: Dict,
         context: str,
         source_file: str
     ) -> str:
-        """Construye el prompt especializado en filosofía estoica"""
+        """Construye el prompt especializado en filosofía estoica (DEPRECATED - usar _build_single_exercise_prompt)"""
 
         # Extraer valores de enums si es necesario
         def get_value(item):
@@ -191,7 +432,7 @@ PERFIL DEL DISCÍPULO:
 - Desafíos/prácticas diarias: {challenges_str}
 """
 
-        num_recommendations = user_profile.get('num_recommendations', 5)
+        num_exercises = user_profile.get('num_exercises', 5)
 
         prompt = f"""Eres un sabio filósofo estoico, seguidor de las enseñanzas de Marco Aurelio, Epicteto y Séneca.
 
@@ -213,14 +454,14 @@ TEXTO ESTOICO "{source_file}":
 {context}
 
 INSTRUCCIONES:
-Como maestro estoico, genera {num_recommendations} enseñanzas PERSONALIZADAS basadas en los textos clásicos y el perfil del discípulo.
+Como maestro estoico, genera {num_exercises} ejercicios PERSONALIZADOS basados en los textos clásicos y el perfil del discípulo.
 
-Cada enseñanza debe:
-1. Estar fundamentada en el TEXTO ESTOICO proporcionado
+Cada ejercicio debe:
+1. Estar fundamentado en el TEXTO ESTOICO proporcionado
 2. Ser relevante a los caminos estoicos de interés del discípulo ({paths_str})
 3. Abordar sus desafíos/prácticas específicas ({challenges_str})
 4. Adaptarse a su nivel de conocimiento estoico ({stoic_level})
-5. Incluir ejercicios prácticos estoicos concretos
+5. Incluir prácticas estoicas concretas
 6. Citar directamente a los maestros estoicos cuando sea posible
 
 Enfoque pedagógico:
@@ -231,12 +472,12 @@ Enfoque pedagógico:
 
 FORMATO DE RESPUESTA (JSON):
 {{
-  "recommendations": [
+  "exercises": [
     {{
-      "title": "Título de la enseñanza estoica",
+      "title": "Título del ejercicio estoico",
       "content": "Explicación filosófica detallada conectando el texto clásico con la vida moderna del discípulo. Incluye un ejercicio práctico estoico específico (ej: meditación matutina, examen vespertino, visualización negativa).",
       "source_reference": "Cita textual del maestro estoico (Marco Aurelio, Epicteto o Séneca) del texto proporcionado",
-      "difficulty": "fácil|intermedio|difícil"
+      "level": "principiante|intermedio|avanzado|maestro"
     }}
   ]
 }}
@@ -246,7 +487,7 @@ TONO Y ESTILO:
 - Sé directo y sin rodeos, como Epicteto
 - Conecta la sabiduría antigua con desafíos modernos ({challenges_str})
 - Usa metáforas naturales (río, piedra, árbol) cuando sea apropiado
-- Termina cada enseñanza con una práctica concreta aplicable HOY
+- Termina cada ejercicio con una práctica concreta aplicable HOY
 
 IMPORTANTE:
 - RESPONDE SOLO CON EL JSON, SIN TEXTO ADICIONAL
@@ -256,7 +497,7 @@ IMPORTANTE:
         return prompt
 
     def _generate_without_context(self, user_profile: Dict) -> str:
-        """Fallback con enseñanzas estoicas generales (sin RAG)"""
+        """Fallback con ejercicios estoicos generales (sin RAG)"""
 
         def get_value(item):
             return item.value if hasattr(item, 'value') else str(item)
@@ -265,33 +506,33 @@ IMPORTANTE:
         stoic_paths = user_profile.get('stoic_paths', [])
         paths_str = ', '.join([get_value(p) for p in stoic_paths]) if stoic_paths else 'las virtudes cardinales'
 
-        num_recs = user_profile.get('num_recommendations', 5)
+        num_exercises = user_profile.get('num_exercises', 5)
 
-        prompt = f"""Eres un maestro estoico. No se encontró contenido específico en los textos, pero genera {num_recs} enseñanzas estoicas FUNDAMENTALES.
+        prompt = f"""Eres un maestro estoico. No se encontró contenido específico en los textos, pero genera {num_exercises} ejercicios estoicos FUNDAMENTALES.
 
 Nivel del discípulo: {stoic_level}
 Caminos de interés: {paths_str}
 
-Genera enseñanzas basadas en los PRINCIPIOS CLÁSICOS del estoicismo:
+Genera ejercicios basados en los PRINCIPIOS CLÁSICOS del estoicismo:
 1. Dicotomía del Control (Epicteto)
 2. Las Cuatro Virtudes Cardinales
 3. Amor Fati (Marco Aurelio)
 4. Memento Mori
 5. Premeditatio Malorum
 
-Cada enseñanza debe incluir:
+Cada ejercicio debe incluir:
 - Explicación del principio estoico
-- Ejercicio práctico concreto
+- Práctica concreta
 - Referencia al maestro estoico que lo enseñó
 
 Formato JSON:
 {{
-  "recommendations": [
+  "exercises": [
     {{
       "title": "Título del principio estoico",
       "content": "Explicación detallada (mínimo 150 palabras) con ejercicio práctico aplicable hoy",
       "source_reference": "Principio fundamental del estoicismo (Marco Aurelio/Epicteto/Séneca)",
-      "difficulty": "fácil|intermedio|difícil"
+      "level": "principiante|intermedio|avanzado|maestro"
     }}
   ]
 }}

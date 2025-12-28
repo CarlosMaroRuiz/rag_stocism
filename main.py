@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import admin_routes, recommendation_routes
+from routes import admin_routes, exercise_routes, auth_routes
 from core.enviroment import env
 
 app = FastAPI(
-    title="RAG Personal Recommendations API",
-    description="API para generar recomendaciones personalizadas usando RAG",
+    title="RAG Stoic Exercises API",
+    description="API para generar ejercicios estoicos personalizados usando RAG",
     version="1.0.0"
 )
 
@@ -20,13 +20,14 @@ app.add_middleware(
 )
 
 # Registrar routers
+app.include_router(auth_routes.router)
 app.include_router(admin_routes.router)
-app.include_router(recommendation_routes.router)
+app.include_router(exercise_routes.router)
 
 @app.get("/", tags=["Health"])
 async def root():
     return {
-        "message": "RAG Personal Recommendations API",
+        "message": "RAG Stoic Exercises API",
         "status": "online",
         "embedding_model": env.EMBEDDING_MODEL
     }
@@ -38,5 +39,4 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
-    print("corriendo en http://")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

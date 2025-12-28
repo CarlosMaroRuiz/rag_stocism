@@ -1,5 +1,4 @@
 from core.db import repository
-
 import json
 
 def _normalize_quiz(quiz: dict) -> dict:
