@@ -426,7 +426,9 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000';
+        // Detectar si estamos en local o producción
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_URL = isDevelopment ? 'http://localhost:8000' : 'https://web.estoico.app/ia';
 
         // === Upload Functionality ===
         const uploadArea = document.getElementById('uploadArea');
