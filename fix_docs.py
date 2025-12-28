@@ -15,7 +15,7 @@ SERVICE_NAME = "mentor-estoico"
 
 def execute_ssh(client, command):
     """Ejecutar comando SSH y mostrar resultado"""
-    print(f"⚙️  Ejecutando: {command[:80]}...")
+    print(f">> Ejecutando: {command[:80]}...")
     stdin, stdout, stderr = client.exec_command(command)
     exit_status = stdout.channel.recv_exit_status()
 
@@ -25,7 +25,7 @@ def execute_ssh(client, command):
     if output:
         print(f"   {output}")
     if error and exit_status != 0:
-        print(f"   ❌ Error: {error}")
+        print(f"   ERROR: {error}")
         return False, output
 
     return True, output
@@ -34,10 +34,10 @@ def execute_ssh(client, command):
 def fix_docs():
     """Actualizar APP_ENV y reiniciar servicio"""
     print("="*70)
-    print("🔧 ACTUALIZANDO CONFIGURACIÓN")
+    print("ACTUALIZANDO CONFIGURACION")
     print("="*70)
 
-    print(f"\n🔌 Conectando a {SSH_USER}@{SSH_HOST}...")
+    print(f"\nConectando a {SSH_USER}@{SSH_HOST}...")
 
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -51,22 +51,22 @@ def fix_docs():
             timeout=10
         )
 
-        print("✅ Conexión SSH establecida\n")
+        print("OK Conexion SSH establecida\n")
 
         # 1. Verificar valor actual de APP_ENV
-        print("📋 Verificando configuración actual...")
+        print("Verificando configuracion actual...")
         success, output = execute_ssh(client, f"grep APP_ENV {DEPLOY_PATH}/.env || echo 'NO_EXISTE'")
 
         # 2. Actualizar APP_ENV a production
-        print("\n🔧 Actualizando APP_ENV a production...")
+        print("\nActualizando APP_ENV a production...")
         execute_ssh(client, f"sed -i 's/^APP_ENV=.*/APP_ENV=production/' {DEPLOY_PATH}/.env")
 
         # 3. Verificar el cambio
-        print("\n✅ Verificando cambio...")
+        print("\nVerificando cambio...")
         execute_ssh(client, f"grep APP_ENV {DEPLOY_PATH}/.env")
 
         # 4. Reiniciar servicio
-        print("\n🔄 Reiniciando servicio...")
+        print("\nReiniciando servicio...")
         execute_ssh(client, f"sudo systemctl restart {SERVICE_NAME}")
 
         # Esperar un momento
@@ -74,23 +74,23 @@ def fix_docs():
         time.sleep(2)
 
         # 5. Verificar estado
-        print("\n📊 Verificando estado del servicio...")
+        print("\nVerificando estado del servicio...")
         execute_ssh(client, f"sudo systemctl status {SERVICE_NAME} --no-pager -l | head -15")
 
         print("\n" + "="*70)
-        print("✅ CONFIGURACIÓN ACTUALIZADA")
+        print("OK CONFIGURACION ACTUALIZADA")
         print("="*70)
 
-        print(f"\n🔗 Verifica que la documentación esté oculta:")
-        print(f"   http://{SSH_HOST}:8001/docs (debería dar 404)")
-        print(f"   http://{SSH_HOST}:8001/redoc (debería dar 404)")
-        print(f"   http://{SSH_HOST}:8001/health (debería funcionar)")
+        print(f"\nVerifica que la documentacion este oculta:")
+        print(f"   http://{SSH_HOST}:8001/docs (deberia dar 404)")
+        print(f"   http://{SSH_HOST}:8001/redoc (deberia dar 404)")
+        print(f"   http://{SSH_HOST}:8001/health (deberia funcionar)")
 
         client.close()
         return True
 
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\nERROR: {e}")
         return False
     finally:
         if client:
@@ -102,5 +102,5 @@ if __name__ == "__main__":
         success = fix_docs()
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
-        print("\n\n⚠️  Operación cancelada")
+        print("\n\nOperacion cancelada")
         sys.exit(1)
