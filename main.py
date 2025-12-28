@@ -13,7 +13,8 @@ app = FastAPI(
     description="API para generar ejercicios estoicos personalizados usando RAG",
     version="1.0.0",
     docs_url=docs_url,
-    redoc_url=redoc_url
+    redoc_url=redoc_url,
+    root_path="/ia"  # Prefijo para funcionar bajo web.estoico.app/ia
 )
 
 # CORS
