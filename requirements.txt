@@ -47,6 +47,7 @@ minio>=7.2.0
 python-dotenv>=1.0.0
 requests>=2.31.0  # Para test SSE
 mysql-connector-python>=8.0.0
+email-validator>=2.0.0  # Requerido para EmailStr de Pydantic
 
 # ==========================================
 # Autenticación JWT
