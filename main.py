@@ -4,10 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import admin_routes, exercise_routes, auth_routes
 from core.enviroment import env
 
+# Deshabilitar documentación en producción
+docs_url = "/docs" if env.APP_ENV == "dev" else None
+redoc_url = "/redoc" if env.APP_ENV == "dev" else None
+
 app = FastAPI(
     title="RAG Stoic Exercises API",
     description="API para generar ejercicios estoicos personalizados usando RAG",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url=docs_url,
+    redoc_url=redoc_url
 )
 
 # CORS
