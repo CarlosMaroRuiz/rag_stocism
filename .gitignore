@@ -3,4 +3,5 @@ venv
 index.html
 __pycache__/
 .claude/
+.claude
 
