@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from shared.utils.quizz_user import get_quizz_user_by_id
+from shared.utils.subscription import get_user_subscription
 from core.middleware.jwt_middleware import require_user_role
 from typing import Dict
 import json
@@ -17,13 +18,23 @@ async def stream_exercises(current_user: Dict = Depends(require_user_role)):
 
     async def event_generator():
         try:
+            # 0️⃣ Validar suscripción activa (PRIMERO - antes del quiz)
+            yield f"event: status\ndata: {json.dumps({'message': 'Verificando suscripción...'})}\n\n"
+            await asyncio.sleep(0)  # Forzar flush inmediato
+            
+            user_subscription = get_user_subscription(user_id)
+            if not user_subscription or not user_subscription.get("has_active_subscription", False):
+                yield f"event: error\ndata: {json.dumps({'error': 'No tienes una suscripción activa. Por favor, suscríbete para generar ejercicios personalizados.'})}\n\n"
+                await asyncio.sleep(0)
+                return
+
             # 1️⃣ Obtener quiz
             yield f"event: status\ndata: {json.dumps({'message': 'Obteniendo perfil estoico del usuario...'})}\n\n"
             await asyncio.sleep(0)  # Forzar flush inmediato
 
             user_quiz = get_quizz_user_by_id(user_id)
             if not user_quiz:
-                yield f"event: error\ndata: {json.dumps({'error': f'Quiz no encontrado para usuario {user_id}'})}\n\n"
+                yield f"event: error\ndata: {json.dumps({'error': f'Quiz no encontrado para usuario {user_id}. Por favor, completa el cuestionario estoico primero.'})}\n\n"
                 await asyncio.sleep(0)
                 return
 
