@@ -30,7 +30,7 @@ class LlmPipe:
         # LLM OpenAI
         self.llm = ChatOpenAI(
             model=env.OPENAI_MODEL,
-            temperature=0.3,
+            temperature=0.8,  # Aumentada para mayor creatividad y variedad
             api_key=env.OPENAI_API_KEY,
         )
 
@@ -102,7 +102,8 @@ class LlmPipe:
         exercise_number: int,
         total_exercises: int,
         context_text: str,
-        source_file: str
+        source_file: str,
+        focus_offset: int = 0
     ) -> str:
         """
         Genera UN solo ejercicio estoico práctico para streaming en tiempo real.
@@ -113,6 +114,7 @@ class LlmPipe:
             total_exercises: Total de ejercicios a generar
             context_text: Contexto de textos estoicos
             source_file: Nombre del archivo fuente
+            focus_offset: Offset para variar el focus_area y evitar repeticiones
 
         Returns:
             JSON con un solo ejercicio
@@ -122,7 +124,8 @@ class LlmPipe:
             exercise_number=exercise_number,
             total_exercises=total_exercises,
             context=context_text,
-            source_file=source_file
+            source_file=source_file,
+            focus_offset=focus_offset
         )
 
         resp = self.llm.invoke(prompt)
@@ -184,7 +187,8 @@ class LlmPipe:
         exercise_number: int,
         total_exercises: int,
         context: str,
-        source_file: str
+        source_file: str,
+        focus_offset: int = 0
     ) -> str:
         """Construye el prompt para generar UN solo ejercicio estoico práctico (streaming)"""
 
@@ -299,7 +303,8 @@ PERFIL DEL PRACTICANTE:
             "Ciclos naturales - Aceptación del ritmo de la vida"
         ]
 
-        current_focus = focus_areas[(exercise_number - 1) % len(focus_areas)]
+        # Usar offset para variar y evitar repeticiones
+        current_focus = focus_areas[(exercise_number - 1 + focus_offset) % len(focus_areas)]
 
         # Guía de niveles
         level_guide = """
@@ -330,7 +335,10 @@ NIVELES ESTOICOS:
 - Máximo nivel de exigencia
 """
 
-        prompt = f"""Eres un maestro que genera EJERCICIOS PRÁCTICOS personalizados basados en filosofía estoica para ayudar al usuario a desarrollar dominio del temperamento, autocontrol, virtud y claridad mental.
+        prompt = f"""Eres un maestro creativo que genera EJERCICIOS PRÁCTICOS ÚNICOS y VARIADOS basados en filosofía estoica para ayudar al usuario a desarrollar dominio del temperamento, autocontrol, virtud y claridad mental.
+
+🎯 PRINCIPIO FUNDAMENTAL: VARIEDAD Y CREATIVIDAD
+Cada ejercicio que generes debe ser COMPLETAMENTE DIFERENTE a los demás. No repitas estructuras, nombres, objetivos o enfoques similares. Sé innovador y creativo en cada ejercicio.
 
 {level_guide}
 
@@ -343,6 +351,8 @@ INSTRUCCIONES:
 Estás generando el ejercicio #{exercise_number} de {total_exercises} para este practicante.
 
 ENFOQUE PARA ESTE EJERCICIO: {current_focus}
+
+⚠️ RECUERDA: Este ejercicio debe ser ÚNICO y DIFERENTE a cualquier otro que hayas generado antes. Varía el enfoque, la estructura, los ejemplos y el estilo.
 
 El ejercicio debe:
 1. Estar DIRECTAMENTE INSPIRADO en el CONTENIDO DEL LIBRO proporcionado arriba
@@ -378,19 +388,32 @@ TONO Y ESTILO:
 - Motivador pero realista
 - Enfoque estoico basado en el CONTENIDO REAL del libro
 
-CRÍTICO - MUY IMPORTANTE:
+CRÍTICO - MUY IMPORTANTE - VARIEDAD Y CREATIVIDAD:
 - RESPONDE SOLO CON EL JSON, SIN TEXTO ADICIONAL
 - Basa el ejercicio en las IDEAS ESPECÍFICAS del contenido proporcionado
 - Las instrucciones deben ser específicas y accionables
 - La duración debe corresponder al nivel del usuario
 - El ejercicio debe complementar los otros {total_exercises - 1} ejercicios
-- NO repitas ejercicios, cada uno debe ser único
+
+⚠️ VARIEDAD Y NO REPETICIÓN (CRÍTICO):
+- CADA ejercicio debe ser COMPLETAMENTE ÚNICO y DIFERENTE
+- NO repitas nombres, objetivos o instrucciones similares
+- Varía el enfoque, el formato y la estructura de cada ejercicio
+- Usa diferentes ejemplos, situaciones y contextos
+- Sé CREATIVO: cada ejercicio debe tener su propia personalidad
+- Si generas ejercicios similares, el usuario notará la repetición - EVÍTALO
+- Busca diferentes ángulos del mismo concepto para mantener variedad
+- Varía el estilo de las instrucciones (algunas más narrativas, otras más directas)
+- Usa diferentes metáforas, analogías y formas de explicar
+
+FUENTES Y REFERENCIAS:
 - En el campo "source": SIEMPRE incluye el nombre del libro "{source_file}" + el autor/concepto del contenido
 - FORMATO DE SOURCE: "De [nombre_libro] - [autor], [capítulo/concepto]"
 - EXTRAE Y CITA a los autores que aparecen en el contenido del libro para dar VARIEDAD
 - Si el texto menciona autores específicos (Marcus Aurelius, Epictetus, Seneca, u otros), ÚSALOS
 - Si el texto menciona un libro específico o capítulo, inclúyelo después del autor
 - Proporciona referencias DIVERSAS basadas en lo que realmente dice el contenido
+- Varía las citas y referencias entre ejercicios para evitar repetición
 """
         return prompt
 

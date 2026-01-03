@@ -93,4 +93,14 @@ class ExerciseRepository(BaseRepository):
         """Verifica si se deben generar nuevos ejercicios"""
         pending_count = self.get_pending_exercises_count(user_id)
         return pending_count < required_count
+    
+    def get_completed_exercises_count(self, user_id: str) -> int:
+        """Cuenta cuántos ejercicios completados tiene el usuario"""
+        query = """
+            SELECT COUNT(*) as count 
+            FROM user_exercises 
+            WHERE user_id = %s AND status = 'completed'
+        """
+        result = self.fetch_one(query, (user_id,))
+        return result['count'] if result else 0
 

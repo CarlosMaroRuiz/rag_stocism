@@ -140,6 +140,10 @@ async def stream_exercises(current_user: Dict = Depends(require_user_role)):
             yield f"event: profile\ndata: {json.dumps({'summary': profile_summary, 'topic': 'estoicismo'})}\n\n"
             await asyncio.sleep(0)  # Forzar flush inmediato
 
+            # Obtener offset basado en ejercicios completados para evitar repeticiones
+            completed_count = exercise_repo.get_completed_exercises_count(user_id)
+            focus_offset = completed_count
+
             # 6️⃣ Generar y enviar cada ejercicio UNO POR UNO en tiempo real
             for i in range(1, exercises_to_generate + 1):
                 yield f"event: status\ndata: {json.dumps({'message': f'Creando ejercicio estoico {i} de {exercises_to_generate}...'})}\n\n"
@@ -151,7 +155,8 @@ async def stream_exercises(current_user: Dict = Depends(require_user_role)):
                     exercise_number=i,
                     total_exercises=exercises_to_generate,
                     context_text=context_text,
-                    source_file=source_file
+                    source_file=source_file,
+                    focus_offset=focus_offset  # Pasar offset para variar
                 )
 
                 # Limpiar y parsear JSON
@@ -214,7 +219,8 @@ async def complete_exercise(
     current_user: Dict = Depends(require_user_role)
 ):
     """
-    Marca un ejercicio como completado y genera uno nuevo si es necesario
+    Marca un ejercicio como completado.
+    Solo genera 5 nuevos ejercicios cuando se completen los 5 pendientes.
     """
     user_id = current_user["user_id"]
     exercise_repo = ExerciseRepository()
@@ -232,24 +238,24 @@ async def complete_exercise(
     if not success:
         raise HTTPException(status_code=500, detail="Error al completar el ejercicio")
     
-    # Verificar si necesita generar un nuevo ejercicio
+    # Verificar cuántos pendientes quedan DESPUÉS de completar
     pending_count = exercise_repo.get_pending_exercises_count(user_id)
-    new_exercise = None
     
-    if pending_count < 5:
-        # Validar suscripción activa antes de generar nuevo ejercicio
+    # Solo generar nuevos ejercicios si se completaron los 5 (pending_count == 0)
+    new_exercises_generated = False
+    if pending_count == 0:
+        # Validar suscripción activa antes de generar nuevos ejercicios
         user_subscription = get_user_subscription(user_id)
         if not user_subscription or not user_subscription.get("has_active_subscription", False):
-            # No tiene suscripción activa, pero el ejercicio ya se completó
             return {
                 "message": "Ejercicio completado exitosamente",
                 "exercise_id": exercise_id,
-                "new_exercise": None,
-                "pending_count": exercise_repo.get_pending_exercises_count(user_id),
-                "warning": "No se pudo generar un nuevo ejercicio porque no tienes una suscripción activa. Por favor, suscríbete para generar ejercicios personalizados."
+                "pending_count": 0,
+                "new_exercises_generated": False,
+                "warning": "No se pudieron generar nuevos ejercicios porque no tienes una suscripción activa."
             }
         
-        # Generar un nuevo ejercicio
+        # Generar 5 nuevos ejercicios
         try:
             user_quiz = get_quizz_user_by_id(user_id)
             if user_quiz:
@@ -267,7 +273,7 @@ async def complete_exercise(
                         stoic_level=user_quiz.get("stoic_level") or "principiante",
                         stoic_paths=user_quiz.get("stoic_paths") or [],
                         daily_challenges=user_quiz.get("daily_challenges") or [],
-                        num_exercises=1
+                        num_exercises=5  # Generar 5 nuevos
                     )
                 
                 user_profile = {
@@ -280,47 +286,55 @@ async def complete_exercise(
                     "daily_challenges": user_quiz.daily_challenges,
                     "stoic_paths": user_quiz.stoic_paths,
                     "stoic_level": user_quiz.stoic_level,
-                    "num_exercises": 1
+                    "num_exercises": 5
                 }
                 
+                # Obtener contexto RAG
                 context_text, source_file = llm_pipe.get_stoic_context(user_profile, k=5)
                 
-                raw_response = llm_pipe.generate_single_exercise(
-                    user_profile=user_profile,
-                    exercise_number=1,
-                    total_exercises=1,
-                    context_text=context_text,
-                    source_file=source_file
-                )
+                # Obtener offset basado en ejercicios completados para evitar repeticiones
+                completed_count = exercise_repo.get_completed_exercises_count(user_id)
+                focus_offset = completed_count
                 
-                # Limpiar y parsear JSON
-                clean_json = raw_response.strip()
-                if "```" in clean_json:
-                    parts = clean_json.split("```")
-                    if len(parts) >= 3:
-                        clean_json = parts[1]
-                    if clean_json.startswith("json") or clean_json.startswith("JSON"):
-                        clean_json = clean_json[4:]
+                # Generar los 5 ejercicios
+                for i in range(1, 6):
+                    raw_response = llm_pipe.generate_single_exercise(
+                        user_profile=user_profile,
+                        exercise_number=i,
+                        total_exercises=5,
+                        context_text=context_text,
+                        source_file=source_file,
+                        focus_offset=focus_offset  # Pasar offset para variar
+                    )
+                    
+                    # Limpiar y parsear JSON
+                    clean_json = raw_response.strip()
+                    if "```" in clean_json:
+                        parts = clean_json.split("```")
+                        if len(parts) >= 3:
+                            clean_json = parts[1]
+                        if clean_json.startswith("json") or clean_json.startswith("JSON"):
+                            clean_json = clean_json[4:]
+                    
+                    clean_json = clean_json.strip()
+                    if not clean_json.startswith("{"):
+                        json_start = clean_json.find("{")
+                        if json_start != -1:
+                            clean_json = clean_json[json_start:]
+                    
+                    exercise_data = json.loads(clean_json)
+                    exercise_repo.create_exercise(user_id, exercise_data)
+                new_exercises_generated = True
                 
-                clean_json = clean_json.strip()
-                if not clean_json.startswith("{"):
-                    json_start = clean_json.find("{")
-                    if json_start != -1:
-                        clean_json = clean_json[json_start:]
-                
-                exercise_data = json.loads(clean_json)
-                new_exercise_id = exercise_repo.create_exercise(user_id, exercise_data)
-                exercise_data["id"] = new_exercise_id
-                new_exercise = exercise_data
         except Exception as e:
-            # Si falla la generación, no es crítico, solo loguear
-            print(f"Error al generar nuevo ejercicio: {e}")
+            print(f"Error al generar nuevos ejercicios: {e}")
     
     return {
         "message": "Ejercicio completado exitosamente",
         "exercise_id": exercise_id,
-        "new_exercise": new_exercise,
-        "pending_count": exercise_repo.get_pending_exercises_count(user_id)
+        "pending_count": pending_count,
+        "new_exercises_generated": new_exercises_generated,
+        "info": "Se generaron 5 nuevos ejercicios" if new_exercises_generated else f"Quedan {pending_count} ejercicios pendientes"
     }
 
 
